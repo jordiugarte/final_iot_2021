@@ -8,11 +8,8 @@ const String MQTT_ADDRESS = "";
 const char* ssid = "";
 const char* password = "";
 
-void setup() {
-  Serial.begin(115200);
-  wifiConnection();
-    
-}
+WiFiClient client;
+PubSubClient pubsubClient;
 
 void wifiConnection() {
   WiFi.begin(ssid, password);
@@ -26,7 +23,23 @@ void wifiConnection() {
   Serial.println(WiFi.localIP());
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void mqttConnection() {
+  if (pubsubClient.connect("arduinoClient", "testuser", "testpass")) {
+    pubsubClient.publish("outTopic","hello world");
+    pubsubClient.subscribe("inTopic");
+  }
+}
 
+void callback(char* topic, byte* payload, unsigned int length) {
+  // handle message arrived
+}
+
+void setup() {
+  Serial.begin(115200);
+  wifiConnection();
+    
+}
+
+void loop() {
+  pubsubClient.loop();
 }
