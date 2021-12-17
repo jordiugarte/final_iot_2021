@@ -9,10 +9,10 @@ const char* password = "kenan123";
 const String mqtt_server = "18.158.198.79";//broker.hivemq.com obtener la ip con nslookup
 const int mqtt_port = 1883;
 
-const char room = '1';
+const char room = '3';
 int intensity = 255;
 const char* mainTopic = "bjmm/main/";
-const char* clientId = "ESP32Client236421321373643276";
+const char* clientId = "ESP32Client23642132137364325476";
 
 bool botonPresionado = false;
 // Pin BOTON
@@ -33,8 +33,10 @@ void IRAM_ATTR ISRbotonPresionado() {
 void setup() {
   Serial.begin(115200);
   pinMode(pinBoton, INPUT_PULLUP);
-  pinMode(pinLed, OUTPUT);
-  digitalWrite(pinLed, ledState);
+
+  ledcSetup(0, 5000, 8);
+  ledcAttachPin(pinLed, 0);
+
   attachInterrupt(digitalPinToInterrupt(pinBoton), ISRbotonPresionado, RISING);
   setup_wifi();
   client.setServer(mqtt_server.c_str(), mqtt_port);
@@ -74,28 +76,12 @@ void callback(char* topic, byte* message, unsigned int length) {
   }
   Serial.println();
   readCommand(messageTemp);
+}
 
-  //****************************************
-  /*sif (String(topic) == mainTopic) {
-      Serial.print("Changing output to ");
-      if(messageTemp == "0"){
-        Serial.println("Off");
-        digitalWrite(pinLed, LOW);
-      }
-      if(messageTemp == "1"){
-        Serial.println("on");
-        digitalWrite(pinLed, HIGH);
-      }
-    if(messageTemp == "2"){
-        Serial.print("Sending led status:");
-      Serial.println(ledState);
-      if(ledState==1){
-      client.publish(publishTopic.c_str(), "1");
-        }else{
-        client.publish(publishTopic.c_str(), "0");
-      }
-      }
-    }*/
+//TODO FIX
+const char* initialSetup() {
+  String result = room + "|" + intensity;
+  return (char*)result.c_str();
 }
 
 void reconnect() {
@@ -103,14 +89,12 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-
     //****************************************
     if (client.connect(clientId)) {
       Serial.println("connected");
       // Subscribe
       client.subscribe(mainTopic);
-      client.publish(mainTopic, sendCommand().c_str());
-
+      client.publish(mainTopic, "3|60");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -126,34 +110,9 @@ String sendCommand() {
 }
 
 void readCommand(String command) {
+  intensity = command.substring(2, command.length()).toInt();
   if (command.charAt(0) == room) {
-    intensity = command.substring(2, command.length()).toInt();
-    if (botonPresionado) {
-      ledcWrite(pinLed, intensity);
-    } else {
-      ledcWrite(pinLed, 0);
-    }
-
-    /*
-        if(botonPresionado==true){
-          if(ledState==LOW){
-            client.publish(publishTopic.c_str(), "1");
-            ledState=HIGH;
-            digitalWrite(pinLed, ledState);
-            botonPresionado=false;
-            delay(100);
-            }
-          }
-        if(botonPresionado==true){
-          if(ledState==HIGH){
-            client.publish(publishTopic.c_str(), "0");
-            ledState=LOW;
-            digitalWrite(pinLed, ledState);
-            botonPresionado=false;
-            delay(100);
-            }
-          }
-      }*/
+    ledcWrite(0, intensity);
   }
 }
 
@@ -162,23 +121,4 @@ void loop() {
     reconnect();
   }
   client.loop();
-  /*
-    if(botonPresionado==true){
-      if(ledState==LOW){
-        client.publish(publishTopic.c_str(), "1");
-        ledState=HIGH;
-        digitalWrite(pinLed, ledState);
-        botonPresionado=false;
-        delay(100);
-        }
-      }
-      if(botonPresionado==true){
-      if(ledState==HIGH){
-        client.publish(publishTopic.c_str(), "0");
-        ledState=LOW;
-        digitalWrite(pinLed, ledState);
-        botonPresionado=false;
-        delay(100);
-        }
-      }*/
 }
