@@ -7,12 +7,14 @@ const char* ssid = "UGARTE YAFFAR";
 const char* password = "kenan123";
 
 // Add your MQTT Broker IP address, example:
-const char* mqtt_server = "18.158.198.79";//broker.hivemq.com obtener la ip con nslookup
+const String mqtt_server = "18.158.198.79";//broker.hivemq.com obtener la ip con nslookup
 const int mqtt_port=1883;
-const char* publishTopic="casa/portico/luz/estado";
-const char* suscribeTopic="casa/portico/luz/cmd";
-const char* suscribeTopic2="casa/portico/luz/brillo";
-const char* clientId="ESP32Client236421321373643276";
+
+const String roomTopic = "room1";
+const String publishTopic = "casa/" + roomTopic + "/luz/estado";
+const String suscribeTopic = "casa/" + roomTopic + "/luz/cmd";
+const String suscribeTopic2 = "casa/" + roomTopic + "/luz/brillo";
+const String clientId = "ESP32Client236421321373643276";
 
 bool botonPresionado = false;
 // Pin BOTON
@@ -37,7 +39,7 @@ void setup() {
   digitalWrite(pinLed,ledState);
   attachInterrupt(digitalPinToInterrupt(pinBoton), ISRbotonPresionado, RISING);
   setup_wifi();
-  client.setServer(mqtt_server, mqtt_port);
+  client.setServer(mqtt_server.c_str(), mqtt_port);
   client.setCallback(callback);
   
 }
@@ -101,9 +103,9 @@ if (String(topic) == suscribeTopic) {
       Serial.print("Sending led status:");
     Serial.println(ledState);
     if(ledState==1){
-    client.publish(publishTopic, "1");
+    client.publish(publishTopic.c_str(), "1");
       }else{
-      client.publish(publishTopic, "0");
+      client.publish(publishTopic.c_str(), "0");
     }
     }
   }
@@ -116,11 +118,11 @@ void reconnect() {
     // Attempt to connect
     
     //****************************************    
-    if (client.connect(clientId)) {
+    if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       // Subscribe
-      client.subscribe(suscribeTopic);
-      client.subscribe(suscribeTopic2);
+      client.subscribe(suscribeTopic.c_str());
+      client.subscribe(suscribeTopic2.c_str());
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -138,7 +140,7 @@ void loop() {
 
   if(botonPresionado==true){
     if(ledState==LOW){
-      client.publish(publishTopic, "1");
+      client.publish(publishTopic.c_str(), "1");
       ledState=HIGH;
       digitalWrite(pinLed, ledState);
       botonPresionado=false;
@@ -147,7 +149,7 @@ void loop() {
     }
     if(botonPresionado==true){
     if(ledState==HIGH){
-      client.publish(publishTopic, "0");
+      client.publish(publishTopic.c_str(), "0");
       ledState=LOW;
       digitalWrite(pinLed, ledState);
       botonPresionado=false;
