@@ -1,3 +1,9 @@
+/*
+  Mauricio Ayllon
+  Mauricio Bejarano
+  Jordi Ugarte
+*/
+
 #include <WiFi.h>
 #include <PubSubClient.h>
 
@@ -5,39 +11,54 @@
 const char* ssid = "UGARTE YAFFAR";
 const char* password = "kenan123";
 
-// Add your MQTT Broker IP address, example:
 const String mqtt_server = "18.158.198.79";//broker.hivemq.com obtener la ip con nslookup
 const int mqtt_port = 1883;
-
-const char room = '3';
-int intensity = 255;
 const char* mainTopic = "bjmm/main/";
 const char* clientId = "ESP32Client23642132137364325476";
 
-bool botonPresionado = false;
+char room = '3';
+int intensity = 255;
+
+bool ledStatus = false;
 // Pin BOTON
-const int pinBoton = 27;
+const int pinButton = 27;
+uint8_t buttonPrev;
 // Pin LED
 const int pinLed = 25;
-int ledState = LOW;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+//TODO FIX
+char* sendCommand() {
+  String result = room + "|" + String(intensity);
+  Serial.println(result);
+  int resultSize = result.length();
+  char buf[resultSize];
+  result.toCharArray(buf, resultSize);
+  return buf;
+}
 
-void IRAM_ATTR ISRbotonPresionado() {
-  Serial.println("Boton Presionado");
-  botonPresionado = true;
+void onButtonPressed() {
+  uint8_t button = digitalRead(pinButton);
+  if (button == LOW && buttonPrev == HIGH) {
+    Serial.println("Button pressed");
+    ledStatus = !ledStatus;
+    intensity = ledStatus ? 255 : 0;
+    ledcWrite(0, intensity);
+    //client.publish(mainTopic, snedCommand());
+  }
+  buttonPrev = digitalRead(pinButton);
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(pinBoton, INPUT_PULLUP);
+  pinMode(pinButton, INPUT_PULLUP);
 
   ledcSetup(0, 5000, 8);
   ledcAttachPin(pinLed, 0);
 
-  attachInterrupt(digitalPinToInterrupt(pinBoton), ISRbotonPresionado, RISING);
+  //attachInterrupt(digitalPinToInterrupt(pinButton), ISRbotonPresionado, RISING);
   setup_wifi();
   client.setServer(mqtt_server.c_str(), mqtt_port);
   client.setCallback(callback);
@@ -78,12 +99,6 @@ void callback(char* topic, byte* message, unsigned int length) {
   readCommand(messageTemp);
 }
 
-//TODO FIX
-const char* initialSetup() {
-  String result = room + "|" + intensity;
-  return (char*)result.c_str();
-}
-
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -105,10 +120,6 @@ void reconnect() {
   }
 }
 
-String sendCommand() {
-  return room + "|" + intensity;
-}
-
 void readCommand(String command) {
   intensity = command.substring(2, command.length()).toInt();
   if (command.charAt(0) == room) {
@@ -121,4 +132,6 @@ void loop() {
     reconnect();
   }
   client.loop();
+  ledStatus = intensity > 0;
+  onButtonPressed();
 }
