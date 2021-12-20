@@ -50,9 +50,9 @@ void onButtonPressed() {
     intensity = ledStatus ? 255 : 0;
     ledcWrite(0, intensity);
     if(intensity==255){
-     client.publish(mainTopic, "1|255"); 
+     client.publish(mainTopic, "1|255|s"); 
     }else{
-     client.publish(mainTopic, "1|0");
+     client.publish(mainTopic, "1|0|s");
     }   
     //result=room + "|" + String(intensity);
     //Serial.print(result);
@@ -120,7 +120,7 @@ void reconnect() {
       Serial.println("connected");
       // Subscribe
       client.subscribe(mainTopic);
-      client.publish(mainTopic, "1|60");
+      client.publish(mainTopic, "1|60|o");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
